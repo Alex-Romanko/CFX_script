@@ -32,14 +32,31 @@ for CFX_file in os.listdir(os.getcwd()):
         else:
             sample_dict[elem[4]] = [elem[5]]
 
+    form_dict = {}
+    for key in sample_dict:
+        for value in sample_dict[key]:
+            try:
+                value = float (value)
+                if key in form_dict:
+                    form_dict[key].append(value)
+                else:
+                    form_dict[key] = [value]
+            except:
+                if key in form_dict:
+                    form_dict[key].append(value)
+                else:
+                    form_dict[key] = [value]
+            
+
+
     shutil.move('./' + str(CFX_file), '../CFX_file_archive')
 
 
     os.chdir ('../')
     #print (os.getcwd())
     with open('Data_Table_Diagn.csv', 'a+') as f:
-        for key in sample_dict.keys():
-            f.write("%s,%s\n"%(key,sample_dict[key]))
+        for key in form_dict.keys():
+            f.write("%s,%s\n"%(key,form_dict[key]))
     os.chdir ('./CFX_files')
 
 
