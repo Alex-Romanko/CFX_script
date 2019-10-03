@@ -1,19 +1,18 @@
 import os
-from os.path import devnull
 import shutil
 import csv
 import operator
+from pathlib import Path
 
-
-if not os.path.exists('../CFX_file_archive'):
-    os.mkdir('../CFX_file_archive')
+if not os.path.exists(Path('../CFX_file_archive')):
+    os.mkdir(Path('../CFX_file_archive'))
 
 #print (os.getcwd())
-os.chdir ('../CFX_files/')
+os.chdir (Path('../CFX_files/'))
 #print (os.getcwd())
 
 for CFX_file in os.listdir(os.getcwd()):
-    #print (str(CFX_file))
+    # print (str(CFX_file))
 
     file_name = 'default'
     sortedlist = []
@@ -35,29 +34,36 @@ for CFX_file in os.listdir(os.getcwd()):
     form_dict = {}
     for key in sample_dict:
         for value in sample_dict[key]:
+            # print (value)
+            if value == 'NaN':
+                value = 38
             try:
-                value = float (value)
+                value = round(float (value), 1)
                 if key in form_dict:
                     form_dict[key].append(value)
                 else:
                     form_dict[key] = [value]
             except:
+                
                 if key in form_dict:
                     form_dict[key].append(value)
                 else:
                     form_dict[key] = [value]
             
 
+    destination = Path('../CFX_file_archive')
+    source = './' + str(CFX_file)
+    shutil.move(source, destination)
 
-    shutil.move('./' + str(CFX_file), '../CFX_file_archive')
 
-
-    os.chdir ('../')
+    os.chdir (Path('../'))
     #print (os.getcwd())
     with open('Data_Table_Diagn.csv', 'a+') as f:
+        f.write(str(CFX_file))
+        f.write('\n')
         for key in form_dict.keys():
             f.write("%s,%s\n"%(key,form_dict[key]))
-    os.chdir ('./CFX_files')
+    os.chdir (Path('./CFX_files'))
 
 
     #print (file_name)
