@@ -3,34 +3,28 @@ import shutil
 import csv
 import operator
 from pathlib import Path
+# you have to run the file from "./code/" directory
 
-if not os.path.exists(Path('../CFX_file_archive')):
-    os.mkdir(Path('../CFX_file_archive'))
-
-#print (os.getcwd())
-os.chdir (Path('../CFX_files/'))
-#print (os.getcwd())
-
-for CFX_file in os.listdir(os.getcwd()):
-    # print (str(CFX_file))
-
-    file_name = 'default'
+def CFX_file_reader (CFX_file):
     sortedlist = []
     start_sequence =['Well', 'Fluor', 'Target', 'Content', 'Sample', 'Cq', 'Starting Quantity (SQ)']
     with open (CFX_file, 'r') as f:
-        file_name = str(f.name)
         csv_reader = csv.reader(f, delimiter=',')
         for  line in csv_reader:
             if line == start_sequence:
                 sortedlist = sorted(csv_reader, key=operator.itemgetter(4, 0, 1), reverse=False)
+    return (sortedlist)
 
+def sample_dict_former (sortedlist):
     sample_dict = {}
     for elem in sortedlist:
         if elem[4] in sample_dict:
             sample_dict[elem[4]].append(elem[5])
         else:
             sample_dict[elem[4]] = [elem[5]]
+    return (sample_dict)
 
+def formating_dict (sample_dict):
     form_dict = {}
     for key in sample_dict:
         for value in sample_dict[key]:
@@ -49,23 +43,34 @@ for CFX_file in os.listdir(os.getcwd()):
                     form_dict[key].append(value)
                 else:
                     form_dict[key] = [value]
-            
+    return (form_dict)
 
-    destination = Path('../CFX_file_archive')
-    source = './' + str(CFX_file)
-    shutil.move(source, destination)
-
-
-    os.chdir (Path('../'))
-    #print (os.getcwd())
+def data_writer (form_dict):
     with open('Data_Table_Diagn.csv', 'a+') as f:
         f.write(str(CFX_file))
         f.write('\n')
         for key in form_dict.keys():
             f.write("%s,%s\n"%(key,form_dict[key]))
-    os.chdir (Path('./CFX_files'))
 
+def move_file_to_archive (CFX_file):
+    destination = Path('../CFX_file_archive')
+    source = './' + str(CFX_file)   # i dont know how to do it for workin in windows and unixlike
+    shutil.move(source, destination)
 
-    #print (file_name)
+def strar_script ():
+    if not os.path.exists(Path('../CFX_file_archive')):
+        os.mkdir(Path('../CFX_file_archive'))
+    os.chdir (Path('../CFX_files/'))
+
 if __name__ == "__main__":
-    pass
+    strar_script ()
+    for CFX_file in os.listdir(os.getcwd()):
+        if CFX_file in os.listdir(Path('../CFX_file_archive')):
+            continue
+        sortedlist = CFX_file_reader (CFX_file)
+        sample_dict = sample_dict_former (sortedlist)
+        form_dict = formating_dict(sample_dict)
+        move_file_to_archive (CFX_file)
+        os.chdir (Path('../'))
+        data_writer (form_dict)
+        os.chdir (Path('./CFX_files'))
