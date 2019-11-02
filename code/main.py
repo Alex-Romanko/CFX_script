@@ -33,7 +33,7 @@ def formating_dict(sample_dict):
         for value in sample_dict[key]:
             # print (value)
             if value == 'NaN':
-                value = 38
+                value = str(value)
             try:
                 value = round(float(value), 1)
                 if key in form_dict:
@@ -58,7 +58,8 @@ def data_writer(form_dict):
 
 def move_file_to_archive(CFX_file):
     destination = Path('../CFX_file_archive')
-    source = './' + str(CFX_file)
+    # source = './' + str(CFX_file)
+    source = str(Path(CFX_file))  # it's work
     shutil.move(source, destination)
 
 
