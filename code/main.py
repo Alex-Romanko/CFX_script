@@ -3,7 +3,28 @@ import shutil
 import csv
 import operator
 from pathlib import Path
+from pprint import pprint
+import httplib2
+import googleapiclient.discovery
+from oauth2client.service_account import ServiceAccountCredentials
 # you have to run the file from "./code/" directory
+
+
+# autorization
+CREDENTIALS_FILE = 'creds.json'
+spreadsheet_id = '16Ox7jX0ljQ5r6Zc7492uaW583-3wDS9HlREXVRNCY9Q'
+
+# Авторизуемся и получаем service — экземпляр доступа к API
+credentials = ServiceAccountCredentials.from_json_keyfile_name(
+    CREDENTIALS_FILE,
+    ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'])
+httpAuth = credentials.authorize(httplib2.Http())
+service = googleapiclient.discovery.build('sheets', 'v4', http=httpAuth)
+
+
+# here is how to insert data to the particular line
+# now data must be in format of a como separated string
+# insert_data = "a777, na, 32, na, na, 33, 32, 32, 34, 22, 23"  # the sample of data
 
 
 def CFX_file_reader(CFX_file):
@@ -35,7 +56,7 @@ def formating_dict(sample_dict):
             if value == 'NaN':
                 value = str(value)
             try:
-                value = round(float(value), 1)
+                value = str(round(float(value), 1))
                 if key in form_dict:
                     form_dict[key].append(value)
                 else:
@@ -48,12 +69,33 @@ def formating_dict(sample_dict):
     return (form_dict)
 
 
-def data_writer(form_dict):
+def data_preparation(sample_name, form_dict):
+    transitional_data_storrage = []
+    transitional_data_storrage.append(sample_name)
+    transitional_data_storrage.extend(form_dict.get(sample_name))
+    return(transitional_data_storrage)
+
+
+def prep_data_to_push(transitional_data_storrage):
+    insert_data = ''
+    for number, value in enumerate(transitional_data_storrage):
+        if number <= len(transitional_data_storrage)-2:
+            insert_data = insert_data + value + ', '
+        else:
+            insert_data = insert_data + value
+    return(insert_data)
+
+
+def data_writer_headder():
     with open('Data_Table_Diagn.csv', 'a+') as f:
         f.write(str(CFX_file))
         f.write('\n')
-        for key in form_dict.keys():
-            f.write("%s,%s\n" % (key, form_dict[key]))
+
+
+def sample_data_writer(insert_data):
+    with open('Data_Table_Diagn.csv', 'a+') as f:
+        f.write(insert_data)
+        f.write('\n')
 
 
 def move_file_to_archive(CFX_file):
@@ -69,15 +111,22 @@ def strar_script():
     os.chdir(Path('../CFX_files/'))
 
 
-if __name__ == "__main__":
-    strar_script()
-    for CFX_file in os.listdir(os.getcwd()):
-        if CFX_file in os.listdir(Path('../CFX_file_archive')):
-            continue
-        sortedlist = CFX_file_reader(CFX_file)
-        sample_dict = sample_dict_former(sortedlist)
-        form_dict = formating_dict(sample_dict)
-        move_file_to_archive(CFX_file)
-        os.chdir(Path('../'))
-        data_writer(form_dict)
-        os.chdir(Path('./CFX_files'))
+strar_script()
+for CFX_file in os.listdir(os.getcwd()):
+    if CFX_file in os.listdir(Path('../CFX_file_archive')):
+        continue
+    sortedlist = CFX_file_reader(CFX_file)
+    sample_dict = sample_dict_former(sortedlist)
+    form_dict = formating_dict(sample_dict)
+    move_file_to_archive(CFX_file)
+    os.chdir(Path('../'))
+    samples_from_protocol = sorted(form_dict.keys())
+    data_writer_headder()  # writes protocol id
+
+    for sample_name in samples_from_protocol:
+        insert_data = prep_data_to_push(data_preparation(sample_name, form_dict))  # now we can push or write data on each step of cycle
+        # print(insert_data, "===> pushed")
+        sample_data_writer(insert_data)
+
+    # data_writer(form_dict)
+    os.chdir(Path('./CFX_files'))
