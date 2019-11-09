@@ -22,9 +22,35 @@ httpAuth = credentials.authorize(httplib2.Http())
 service = googleapiclient.discovery.build('sheets', 'v4', http=httpAuth)
 
 
-# here is how to insert data to the particular line
-# now data must be in format of a como separated string
-# insert_data = "a777, na, 32, na, na, 33, 32, 32, 34, 22, 23"  # the sample of data
+def request_for_batch_update(data):
+    insert_data = data
+    # forming http request
+    batch_update_spreadsheet_request_body = {
+        "requests": [
+            {
+                "insertRange": {
+                    "range": {
+                        "sheetId": 1288123411,
+                        "startRowIndex": 2,
+                        "endRowIndex": 3
+                    },
+                    "shiftDimension": "ROWS"
+                }
+            },
+            {
+                "pasteData": {
+                    "data": f'{insert_data}',  # inserting data in request
+                    "type": "PASTE_NORMAL",
+                    "delimiter": ",",
+                    "coordinate": {
+                        "sheetId": 1288123411,
+                        "rowIndex": 2  # the nomber of row to inserting data
+                    }
+                }
+            }
+        ]
+    }
+    return(batch_update_spreadsheet_request_body)
 
 
 def CFX_file_reader(CFX_file):
@@ -70,6 +96,7 @@ def formating_dict(sample_dict):
 
 
 def data_preparation(sample_name, form_dict):
+    # forming list for each sample from dictionary to correct writing
     transitional_data_storrage = []
     transitional_data_storrage.append(sample_name)
     transitional_data_storrage.extend(form_dict.get(sample_name))
@@ -77,6 +104,7 @@ def data_preparation(sample_name, form_dict):
 
 
 def prep_data_to_push(transitional_data_storrage):
+    # forming comma separated string to insert it into request body or CSV file
     insert_data = ''
     for number, value in enumerate(transitional_data_storrage):
         if number <= len(transitional_data_storrage)-2:
@@ -120,13 +148,16 @@ for CFX_file in os.listdir(os.getcwd()):
     form_dict = formating_dict(sample_dict)
     move_file_to_archive(CFX_file)
     os.chdir(Path('../'))
-    samples_from_protocol = sorted(form_dict.keys())
+    samples_from_protocol = sorted(form_dict.keys(), reverse=True)
     data_writer_headder()  # writes protocol id
 
+    # making a request
     for sample_name in samples_from_protocol:
         insert_data = prep_data_to_push(data_preparation(sample_name, form_dict))  # now we can push or write data on each step of cycle
+        request = service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=request_for_batch_update(insert_data)).execute()
         # print(insert_data, "===> pushed")
         sample_data_writer(insert_data)
+    request = service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=request_for_batch_update(str(CFX_file))).execute()
 
     # data_writer(form_dict)
     os.chdir(Path('./CFX_files'))
