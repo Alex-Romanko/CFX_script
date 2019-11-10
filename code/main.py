@@ -66,11 +66,11 @@ def CFX_file_reader(CFX_file):
 
 def sample_dict_former(sortedlist):
     sample_dict = {}
-    for elem in sortedlist:
-        if elem[4] in sample_dict:
-            sample_dict[elem[4]].append(elem[5])
+    for element in sortedlist:
+        if element[4] in sample_dict:
+            sample_dict[element[4]].append(element[5])
         else:
-            sample_dict[elem[4]] = [elem[5]]
+            sample_dict[element[4]] = [element[5]]
     return (sample_dict)
 
 
